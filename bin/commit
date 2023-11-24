@@ -1,0 +1,43 @@
+#!/bin/bash
+increment_version() {
+    local version_file="./assets/VERSION"
+    local current_version=$(cat "$version_file")
+    IFS='.' read -ra version_parts <<< "$current_version"
+    local major=${version_parts[0]}
+    local minor=${version_parts[1]}
+    local maintenance=${version_parts[2]}
+    maintenance=$((maintenance + 1))
+    if ((maintenance > 42)); then
+        maintenance=0
+        minor=$((minor + 1))
+        if ((minor > 42)); then
+            minor=0
+            major=$((major + 1))
+        fi
+    fi
+
+    local new_version="$major.$minor.$maintenance"
+    echo "$new_version" > "$version_file"
+}
+
+if [[ $# -lt 1 ]]; then
+    echo "Error: Insufficient arguments provided: 'provide a commit message'"
+    exit 1
+fi
+
+git rev-parse --short HEAD > ./assets/REVISION
+MSG=$1
+ASS=$2
+increment_version
+VERSION=$(cat ./assets/VERSION);
+date '+%Y-%m-%d %H:%M:%S' > ./assets/SINCE
+git add .
+git commit -a -m "${MSG} (${VERSION})"
+
+# if [[ $ASS != "" ]]; then
+#   rm -Rf ./public/assets/*
+#   bundle exec rake assets:precompile RAILS_ENV=production
+
+#   git add .
+#   git commit -a -m "Asset Precompiled (${VERSION})"
+# fi
